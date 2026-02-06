@@ -1,6 +1,6 @@
 local M = {}
 
-local GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+local GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 local function get_api_key()
 	return os.getenv("GEMINI_API_KEY")
@@ -12,7 +12,6 @@ function M.run(prompt, on_done)
 		vim.notify("GEMINI_API_KEY not set", vim.log.levels.ERROR)
 		return
 	end
-
 	local body = vim.fn.json_encode({
 		contents = {
 			{
@@ -22,8 +21,10 @@ function M.run(prompt, on_done)
 				},
 			},
 		},
+		generationConfig = {
+			maxOutputTokens = 1024,
+		},
 	})
-
 	vim.fn.jobstart({
 		"curl",
 		"-sS",
@@ -48,14 +49,28 @@ function M.run(prompt, on_done)
 				return
 			end
 
-			local text = decoded.candidates
-				and decoded.candidates[1]
-				and decoded.candidates[1].content
-				and decoded.candidates[1].content.parts
-				and decoded.candidates[1].content.parts[1]
-				and decoded.candidates[1].content.parts[1].text
+			local function extract_text(decoded)
+				if not decoded or not decoded.candidates then
+					return nil
+				end
 
-			if text then
+				local parts = decoded.candidates[1].content.parts
+				if not parts then
+					return nil
+				end
+
+				local result = {}
+				for _, part in ipairs(parts) do
+					if part.text then
+						table.insert(result, part.text)
+					end
+				end
+
+				return table.concat(result, "")
+			end
+			local text = extract_text(decoded)
+
+			if text and text ~= "" then
 				on_done(text)
 			else
 				vim.notify("Empty Gemini response", vim.log.levels.WARN)
