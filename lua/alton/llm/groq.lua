@@ -4,7 +4,7 @@ local GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 local function get_api_key()
 	-- Temporary hardcoded API key
-	return os.getenv("GROQ_API_KEY") or""
+	return ""
 end
 
 function M.run(prompt, on_done)
