@@ -4,7 +4,7 @@ local GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 local function get_api_key()
 	-- Temporary hardcoded API key
-	return os.getenv("GROQ_API_KEY") or "my_api_key-:---orewa-uffy"
+	return ""
 end
 
 function M.run(prompt, on_done)
@@ -68,7 +68,8 @@ function M.run(prompt, on_done)
 				and decoded.choices[1].message.content
 
 			if text then
-				safe_callback(text)
+				local lines = vim.split(text, "\n", { plain = true })
+				safe_callback(lines)
 			else
 				safe_callback("Error: Empty response from Groq")
 			end

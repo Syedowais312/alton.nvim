@@ -5,66 +5,77 @@ function M.setup(opts)
 	opts = opts or {}
 
 	vim.keymap.set("v", "<F2>", function()
-		-- Cancel previous request if exists
+		-- cancel previous request
 		if current_request then
 			current_request.cancelled = true
 		end
 
-		-- Create popup immediately for visual feedback
-		local buf, win = require("alton.ui.popup").open({ "Thinking..." })
+		-- open popup immediately
+		local popup = require("alton.ui.popup")
+		local buf, win = popup.open({ "Thinking..." })
 
-		-- Yank selection and exit visual mode
+		-- yank visual selection
 		vim.api.nvim_feedkeys('"+y<Esc>', "x", false)
 
-		-- Very short delay to complete the yank
 		vim.defer_fn(function()
 			local sel = vim.fn.getreg("+")
 
 			if sel == "" then
-				print("DEBUG: No selection found")
-				-- Close popup if no selection
 				if win and vim.api.nvim_win_is_valid(win) then
 					vim.api.nvim_win_close(win, true)
 				end
 				return
 			end
 
-			print("DEBUG: New request with selection:", sel:sub(1, 50) .. "...")
-
-			-- Create new request object with unique ID
 			current_request = {
 				cancelled = false,
 				buf = buf,
 				win = win,
-				id = vim.loop.hrtime(), -- Unique timestamp for this request
+				id = vim.loop.hrtime(),
 			}
 
-			require("alton.llm.groq").run(sel, function(text)
-				-- Store the request ID for this callback
+			-- Create a beginner-friendly line-by-line explanation prompt
+			local prompt = string.format(
+				[[
+highlighted code:
+
+%s
+
+Explain the above code line by line for a programming beginner. Format each explanation like:
+
+Line 1: [code] - [simple explanation]
+Line 2: [code] - [simple explanation] 
+Line 3: [code] - [simple explanation]
+
+Rules:
+- Explain every line individually
+- Use simple, beginner-friendly language
+- No "let me know" or conversational phrases
+- Be direct and educational
+- Assume the user has never coded before
+-keep the explanaion minimal and valid]],
+				sel
+			)
+
+			require("alton.llm.groq").run(prompt, function(lines)
 				local request_id = current_request.id
 
-				print("DEBUG: Response received for request ID:", request_id)
-				print("DEBUG: Current request ID:", current_request.id)
-				print("DEBUG: Request cancelled:", current_request.cancelled)
-
-				-- Ignore if this request was cancelled
 				if current_request.cancelled or current_request.id ~= request_id then
-					print("DEBUG: Ignoring outdated response")
 					return
 				end
 
-				print("DEBUG: Updating popup with response")
-				vim.schedule(function()
-					if not current_request.buf or not vim.api.nvim_buf_is_valid(current_request.buf) then
-						return
-					end
+				if not current_request.buf or not vim.api.nvim_buf_is_valid(current_request.buf) then
+					return
+				end
 
-					vim.bo[current_request.buf].modifiable = true
-					vim.api.nvim_buf_set_lines(current_request.buf, 0, -1, false, vim.split(text, "\n"))
-					vim.bo[current_request.buf].modifiable = false
-				end)
+				vim.bo[current_request.buf].modifiable = true
+				vim.api.nvim_buf_set_lines(current_request.buf, 0, -1, false, lines)
+				vim.bo[current_request.buf].modifiable = false
+
+				-- Update popup height based on actual content
+				require("alton.ui.popup").update_height(current_request.buf, current_request.win)
 			end)
-		end, 1) -- Minimal delay for yank operation
+		end, 1)
 	end)
 end
 
