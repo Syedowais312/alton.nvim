@@ -109,7 +109,7 @@ Rules:
 			selection
 		)
 
-		require("alton.llm.groq").run(prompt, function(lines)
+		require("alton.llm").run(prompt, function(lines)
 			vim.schedule(function()
 				local request_id = current_request.id
 				if current_request.cancelled or current_request.id ~= request_id then

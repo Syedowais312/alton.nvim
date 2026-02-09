@@ -1,25 +1,26 @@
 local M = {}
+local config = {}
 
-local GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-local function get_api_key()
-	-- Temporary hardcoded API key
-	return ""
+function M.setup(opts)
+	config = vim.tbl_extend("force", {
+		api_key = os.getenv("OPENAI_API_KEY"),
+		model = "gpt-4o-mini",
+		temperature = 0.2,
+		url = "https://api.openai.com/v1/chat/completions",
+	}, opts or {})
 end
 
 function M.run(prompt, on_done)
-	local api_key = get_api_key()
+	local api_key = config.api_key
 	if not api_key then
-		vim.notify("GROQ_API_KEY not set", vim.log.levels.ERROR)
+		vim.notify("OPENAI_API_KEY not set", vim.log.levels.ERROR)
 		return
 	end
 
 	local body = vim.fn.json_encode({
-		model = "llama-3.1-8b-instant",
-		messages = {
-			{ role = "user", content = prompt },
-		},
-		temperature = 0.2,
+		model = config.model,
+		messages = { { role = "user", content = prompt } },
+		temperature = config.temperature,
 	})
 
 	local callback_called = false
@@ -37,7 +38,7 @@ function M.run(prompt, on_done)
 		"-sS",
 		"-X",
 		"POST",
-		GROQ_URL,
+		config.url,
 		"-H",
 		"Content-Type: application/json",
 		"-H",
@@ -50,7 +51,6 @@ function M.run(prompt, on_done)
 			if not data or #data == 0 then
 				return
 			end
-
 			local raw = table.concat(data, "")
 			if raw == "" then
 				return
@@ -58,7 +58,7 @@ function M.run(prompt, on_done)
 
 			local ok, decoded = pcall(vim.fn.json_decode, raw)
 			if not ok then
-				safe_callback("Error: Invalid JSON response - " .. raw)
+				safe_callback({ "Error: Invalid JSON response" })
 				return
 			end
 
@@ -71,17 +71,17 @@ function M.run(prompt, on_done)
 				local lines = vim.split(text, "\n", { plain = true })
 				safe_callback(lines)
 			else
-				safe_callback("Error: Empty response from Groq")
+				safe_callback({ "Error: Empty response from OpenAI" })
 			end
 		end,
 		on_stderr = function(_, data)
 			if data and #data > 0 then
-				safe_callback("Error: " .. table.concat(data, ""))
+				safe_callback({ "Error: " .. table.concat(data, "") })
 			end
 		end,
 		on_exit = function(_, code)
 			if code ~= 0 and not callback_called then
-				safe_callback("Error: Request failed (code " .. code .. ")")
+				safe_callback({ "Error: Request failed (code " .. code .. ")" })
 			end
 		end,
 	})
