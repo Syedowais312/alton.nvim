@@ -32,6 +32,9 @@ An AI-powered Neovim plugin that provides intelligent code explanations using va
 
 ## Configuration
 
+**NOTE:**
+> make sure to add the below code to the config path ~/.config/nvim/lua/plugins/alton.lua  (usually) or addto the path where you have you config
+
 ### Groq (Default)
 
 ```lua
