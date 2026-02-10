@@ -3,6 +3,7 @@ local provider = nil
 
 function M.setup(opts)
 	opts = opts or {}
+	vim.notify("LLM setup called with: " .. vim.inspect(opts), vim.log.levels.INFO)
 	local provider_name = opts.provider or "groq"
 
 	if provider_name == "groq" then

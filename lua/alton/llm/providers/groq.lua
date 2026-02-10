@@ -8,6 +8,8 @@ function M.setup(opts)
 		temperature = 0.2,
 		url = "https://api.groq.com/openai/v1/chat/completions",
 	}, opts or {})
+	-- for debugging purposesplease make sure to uncomment this below line
+	--	vim.notify(string.format("Alton using Ollama: %s at %s", config.model, config.url), vim.log.levels.INFO)
 end
 
 function M.run(prompt, on_done)

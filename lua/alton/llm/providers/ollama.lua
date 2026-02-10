@@ -6,6 +6,7 @@ function M.setup(opts)
 		url = "http://localhost:11434/api/generate",
 		model = "codellama",
 	}, opts or {})
+	--	vim.notify(string.format("Alton using Ollama: %s at %s", config.model, config.url), vim.log.levels.INFO)
 end
 
 function M.run(prompt, on_done)

@@ -11,6 +11,8 @@ function M.run(prompt, on_done)
 	if not api_key then
 		vim.notify("GEMINI_API_KEY not set", vim.log.levels.ERROR)
 		return
+		-- for debugging purpose please make to uncomment this below line
+		--	vim.notify(string.format("Alton using Ollama: %s at %s", config.model, config.url), vim.log.levels.INFO)
 	end
 	local body = vim.fn.json_encode({
 		contents = {
